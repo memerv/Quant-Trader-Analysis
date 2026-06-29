@@ -1,0 +1,14 @@
+# Streamlit theme — trading terminal (deep navy + cyan)
+[theme]
+base = "dark"
+primaryColor = "#39BAE6"
+backgroundColor = "#0B1220"
+secondaryBackgroundColor = "#111C30"
+textColor = "#E7EEF7"
+font = "sans serif"
+
+[server]
+runOnSave = true
+
+[browser]
+gatherUsageStats = false

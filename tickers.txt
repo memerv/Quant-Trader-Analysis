@@ -1,0 +1,58 @@
+# ============================================================
+# UNIVERSE OF STOCKS TO RANK
+# One ticker per line. Lines starting with '#' are ignored.
+# These are the CANDIDATES the engine scores against each other.
+# Add or remove freely. More names = a fairer cross-sectional ranking
+# (aim for at least ~20). Use Yahoo Finance ticker symbols.
+# ============================================================
+
+# --- US mega-cap tech ---
+AAPL
+MSFT
+GOOGL
+AMZN
+META
+NVDA
+AVGO
+ORCL
+ADBE
+CRM
+AMD
+QCOM
+TXN
+INTC
+CSCO
+
+# --- Consumer / retail ---
+COST
+WMT
+HD
+NKE
+MCD
+SBUX
+PG
+KO
+PEP
+
+# --- Healthcare ---
+LLY
+UNH
+JNJ
+ABBV
+MRK
+TMO
+
+# --- Financials ---
+JPM
+V
+MA
+BAC
+GS
+
+# --- Industrials / energy / other ---
+CAT
+GE
+BA
+XOM
+CVX
+LIN
