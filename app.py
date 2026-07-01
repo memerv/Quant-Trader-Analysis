@@ -1,16 +1,8 @@
 """
-app.py  —  QUANT DESK  (clean dashboard)
+app.py  —  QUANT DESK  (clean dashboard + Custom Login)
 ========================================
 Single-scroll dark dashboard: market-pulse KPIs, candlestick chart, daily gold,
 factor-ranked shortlist, and a green/red watchlist.
-
-All colours and text contrast are set directly in CSS here, so the app stays
-readable whether or not .streamlit/config.toml is present.
-
-Educational research tool — NOT investment advice and NOT a price predictor.
-
-Run:     streamlit run app.py
-Deploy:  push to GitHub -> share.streamlit.io -> main file app.py
 """
 
 from __future__ import annotations
@@ -28,8 +20,114 @@ from data_loader import (read_tickers, load_universe, load_market_extras,
 from quant_engine import compute_factor_scores, top_n, explain, FACTORS
 
 C = config.COLORS
+
+# ---------------------------------------------------------------------------
+# 1. ตั้งค่าหน้าเพจ (ต้องอยู่ส่วนบนสุดเสมอ)
+# ---------------------------------------------------------------------------
 st.set_page_config(page_title="Quant Desk", page_icon="◆", layout="wide",
                    initial_sidebar_state="expanded")
+
+# ---------------------------------------------------------------------------
+# 2. ระบบ LOGIN STATE และ UI (เพิ่มเข้ามาใหม่)
+# ---------------------------------------------------------------------------
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    # --- CSS บังคับธีมสว่างและจำลองหน้าต่าง Modal แบบในรูป ---
+    st.markdown("""
+    <style>
+    /* บังคับพื้นหลังสีสว่าง ไม่สน Dark Mode ของ Browser */
+    [data-testid="stAppViewContainer"] {
+        background: radial-gradient(circle at center, #F5F7FA 0%, #E8EAF2 100%) !important;
+        color-scheme: light !important;
+    }
+    /* ซ่อน Sidebar และ Header ของ Streamlit ในหน้า Login */
+    [data-testid="stSidebar"] { display: none !important; }
+    header[data-testid="stHeader"] { display: none !important; }
+
+    /* ปรับกรอบหลักให้กลายเป็น Card สีขาวตรงกลาง */
+    .block-container {
+        max-width: 800px !important;
+        padding: 0 !important;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        margin-top: 15vh !important;
+        overflow: hidden;
+    }
+
+    /* ปรับแต่ง Input ของ Streamlit ให้กลืนกับดีไซน์ */
+    div[data-baseweb="input"] {
+        background-color: #F8F9FA !important;
+        border: 1px solid #E0E0E0 !important;
+        border-radius: 8px !important;
+    }
+    div[data-baseweb="input"] input {
+        color: #333 !important;
+        background-color: transparent !important;
+    }
+    
+    /* ปุ่ม SIGN IN สีม่วง */
+    button[kind="primary"] {
+        background-color: #5D3DF8 !important;
+        color: white !important;
+        border: none !important;
+        font-weight: bold;
+        padding: 10px;
+        border-radius: 8px;
+        transition: 0.3s;
+    }
+    button[kind="primary"]:hover { background-color: #4B2CC3 !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # --- สร้าง Layout แบ่งซ้าย(ฟอร์ม) / ขวา(ป้ายสีม่วง) ---
+    col_left, col_right = st.columns([1.2, 1], gap="medium")
+    
+    with col_left:
+        st.write("") 
+        st.write("") 
+        st.markdown("<h2 style='color: black; text-align: center; margin-bottom: 5px; font-weight: 800;'>Sign In</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #888; font-size: 13px; margin-bottom: 20px;'>or use your email password</p>", unsafe_allow_html=True)
+        
+        # ช่องกรอกข้อมูล (เชื่อมกับ Python)
+        email = st.text_input("Email", placeholder="Email", label_visibility="collapsed")
+        password = st.text_input("Password", type="password", placeholder="Password", label_visibility="collapsed")
+        st.markdown("<a href='#' style='color: #888; text-decoration: none; font-size: 12px;'>Forget Your Password?</a><br><br>", unsafe_allow_html=True)
+        
+        # พอกดปุ่ม SIGN IN จะเปลี่ยนสถานะและรีโหลดหน้าใหม่
+        if st.button("SIGN IN", type="primary", use_container_width=True):
+            # ตรงนี้คุณสามารถเพิ่มเงื่อนไขเช็คอีเมล/รหัสผ่านจริงได้ในอนาคต
+            st.session_state.logged_in = True
+            st.rerun()
+
+    with col_right:
+        # ส่วนกราฟิกด้านขวา (ตกแต่งด้วย HTML เพื่อให้ได้ดีไซน์เป๊ะๆ)
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #6C4AF2 0%, #4B2CC3 100%);
+                    height: 100%; min-height: 400px; display: flex; flex-direction: column; 
+                    justify-content: center; align-items: center; color: white; 
+                    padding: 40px; text-align: center; margin: -1rem -1rem -1rem 0;">
+            <h2 style="color: white; margin-bottom:15px; font-weight: 700;">Hello, Friend!</h2>
+            <p style="margin-bottom:30px; font-size: 14px; line-height: 1.5; color: #E8EAF2;">
+                Register with your personal details to use all of site features
+            </p>
+            <button style="background: transparent; border: 2px solid white; color: white;
+                           padding: 10px 35px; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                SIGN UP
+            </button>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # *** สำคัญมาก: คำสั่งนี้จะหยุดการทำงานตรงนี้ ไม่ให้โหลด Dashboard หุ้นขึ้นมาจนกว่าจะ Login ***
+    st.stop()
+
+
+# ===========================================================================
+# 3. QUANT DESK DASHBOARD (โค้ดเดิมของคุณทั้งหมด นำมาต่อตรงนี้)
+# โค้ดนี้จะรันก็ต่อเมื่อ st.session_state.logged_in = True เท่านั้น
+# ===========================================================================
 
 UP, DOWN, ACC, GOLD, INK, MUT = (C["up"], C["down"], C["accent"], C["gold"],
                                  C["ink"], C["muted"])
@@ -56,7 +154,7 @@ html, body, .stApp, [class*="css"], button, input, select, textarea,
 
 .stApp {{ background:
   radial-gradient(1100px 520px at 82% -8%, #16294a 0%, rgba(11,18,32,0) 55%),
-  {C['bg']}; color:{INK}; }}
+  {C['bg']} !important; color:{INK}; }}
 
 /* kill the white default header + tidy the cloud toolbar */
 [data-testid="stHeader"] {{ background:transparent !important; }}
@@ -136,6 +234,12 @@ html, body, .stApp, [class*="css"], button, input, select, textarea,
   padding:1.1rem 1.3rem; margin-top:1.4rem; line-height:1.6; }}
 .disc b {{ color:{INK}; }}
 hr {{ border-color:{C['border']}; }}
+
+/* เพิ่มเติม: ปุ่ม Logout สำหรับกลับไปหน้า Login */
+button[kind="secondary"] {
+    border-color: {C['border']};
+    color: {MUT};
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -281,6 +385,12 @@ with st.sidebar:
         st.rerun()
     st.caption("Prices via Yahoo Finance, cached ~6h. Long-horizon scoring "
                "doesn't need real-time data.")
+    
+    # เพิ่มปุ่ม Logout ใน Sidebar
+    st.divider()
+    if st.button("← Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
 
 
 # ---------------------------------------------------------------------------
@@ -412,7 +522,7 @@ for sym, row in picks.iterrows():
         with c2:
             st.markdown('<div class="phead">Composite score</div>'
                         f'<div class="bigscore">{row["composite"]:.0f}<small> / 100</small></div>'
-                        '<div class="phead" style="margin-top:.6rem">Why it ranks here</div>',
+                        f'<div class="phead" style="margin-top:.6rem">Why it ranks here</div>',
                         unsafe_allow_html=True)
             st.markdown('<ul class="reasons">' +
                         "".join(f"<li>{x}</li>" for x in explain(row)) + "</ul>",
